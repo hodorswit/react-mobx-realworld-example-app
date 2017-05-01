@@ -1,26 +1,40 @@
 import { Link } from 'react-router';
 import ListErrors from './ListErrors';
 import React from 'react';
-import { inject, observer } from 'mobx-react';
+import agent from '../agent';
+import { connect } from 'react-redux';
 
-@inject('authStore')
-@observer
-export default class Login extends React.Component {
+const mapStateToProps = state => ({ ...state.auth });
 
-  componentWillUnmount() {
-    this.props.authStore.reset();
+const mapDispatchToProps = dispatch => ({
+  onChangeEmail: value =>
+    dispatch({ type: 'UPDATE_FIELD_AUTH', key: 'email', value }),
+  onChangePassword: value =>
+    dispatch({ type: 'UPDATE_FIELD_AUTH', key: 'password', value }),
+  onSubmit: (email, password) =>
+    dispatch({ type: 'LOGIN', payload: agent.Auth.login(email, password) }),
+  onUnload: () =>
+    dispatch({ type: 'LOGIN_PAGE_UNLOADED' })
+});
+
+class Login extends React.Component {
+  constructor() {
+    super();
+    this.changeEmail = ev => this.props.onChangeEmail(ev.target.value);
+    this.changePassword = ev => this.props.onChangePassword(ev.target.value);
+    this.submitForm = (email, password) => ev => {
+      ev.preventDefault();
+      this.props.onSubmit(email, password);
+    };
   }
 
-  handleEmailChange = e => this.props.authStore.setEmail(e.target.value);
-  handlePasswordChange = e => this.props.authStore.setPassword(e.target.value);
-  handleSubmitForm = (e) => {
-    e.preventDefault();
-    this.props.authStore.login();
+  componentWillUnmount() {
+    this.props.onUnload();
   }
 
   render() {
-    const { values, errors, inProgress } = this.props.authStore;
-
+    const email = this.props.email;
+    const password = this.props.password;
     return (
       <div className="auth-page">
         <div className="container page">
@@ -34,9 +48,9 @@ export default class Login extends React.Component {
                 </Link>
               </p>
 
-              <ListErrors errors={errors} />
+              <ListErrors errors={this.props.errors} />
 
-              <form onSubmit={this.handleSubmitForm}>
+              <form onSubmit={this.submitForm(email, password)}>
                 <fieldset>
 
                   <fieldset className="form-group">
@@ -44,8 +58,8 @@ export default class Login extends React.Component {
                       className="form-control form-control-lg"
                       type="email"
                       placeholder="Email"
-                      value={values.email}
-                      onChange={this.handleEmailChange} />
+                      value={email}
+                      onChange={this.changeEmail} />
                   </fieldset>
 
                   <fieldset className="form-group">
@@ -53,14 +67,14 @@ export default class Login extends React.Component {
                       className="form-control form-control-lg"
                       type="password"
                       placeholder="Password"
-                      value={values.password}
-                      onChange={this.handlePasswordChange} />
+                      value={password}
+                      onChange={this.changePassword} />
                   </fieldset>
 
                   <button
                     className="btn btn-lg btn-primary pull-xs-right"
                     type="submit"
-                    disabled={inProgress}>
+                    disabled={this.props.inProgress}>
                     Sign in
                   </button>
 
@@ -74,3 +88,5 @@ export default class Login extends React.Component {
     );
   }
 }
+
+export default connect(mapStateToProps, mapDispatchToProps)(Login);

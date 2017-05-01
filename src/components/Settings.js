@@ -1,9 +1,10 @@
 import ListErrors from './ListErrors';
 import React from 'react';
-import { inject, observer } from 'mobx-react';
+import { Link } from 'react-router';
+import agent from '../agent';
+import { connect } from 'react-redux';
+import store from '../store';
 
-@inject('profileStore')
-@observer
 class SettingsForm extends React.Component {
   constructor() {
     super();
@@ -35,13 +36,24 @@ class SettingsForm extends React.Component {
   }
 
   componentWillMount() {
-    if (this.props.profileStore.currentUser) {
+    if (this.props.currentUser) {
       Object.assign(this.state, {
-        image: this.props.profileStore.currentUser.image || '',
-        username: this.props.profileStore.currentUser.username,
-        bio: this.props.profileStore.currentUser.bio || '',
-        email: this.props.profileStore.currentUser.email
+        image: this.props.currentUser.image || '',
+        username: this.props.currentUser.username,
+        bio: this.props.currentUser.bio,
+        email: this.props.currentUser.email
       });
+    }
+  }
+
+  componentWillReceiveProps(nextProps) {
+    if (nextProps.currentUser) {
+      this.setState(Object.assign({}, this.state, {
+        image: nextProps.currentUser.image || '',
+        username: nextProps.currentUser.username,
+        bio: nextProps.currentUser.bio,
+        email: nextProps.currentUser.email
+      }));
     }
   }
 
@@ -99,7 +111,7 @@ class SettingsForm extends React.Component {
           <button
             className="btn btn-lg btn-primary pull-xs-right"
             type="submit"
-            disabled={this.props.profileStore.updatingUser}>
+            disabled={this.state.inProgress}>
             Update Settings
           </button>
 
@@ -109,12 +121,19 @@ class SettingsForm extends React.Component {
   }
 }
 
-@inject('profileStore', 'authStore')
-@observer
+const mapStateToProps = state => ({
+  ...state.settings,
+  currentUser: state.common.currentUser
+});
+
+const mapDispatchToProps = dispatch => ({
+  onClickLogout: () => dispatch({ type: 'LOGOUT' }),
+  onSubmitForm: user =>
+    dispatch({ type: 'SETTINGS_SAVED', payload: agent.Auth.save(user) }),
+  onUnload: () => dispatch({ type: 'SETTINGS_PAGE_UNLOADED' })
+});
+
 class Settings extends React.Component {
-
-  handleClickLogout = () => this.props.authStore.logout();
-
   render() {
     return (
       <div className="settings-page">
@@ -124,17 +143,17 @@ class Settings extends React.Component {
 
               <h1 className="text-xs-center">Your Settings</h1>
 
-              <ListErrors errors={this.props.profileStore.updatingUserErrors} />
+              <ListErrors errors={this.props.errors}></ListErrors>
 
               <SettingsForm
-                currentUser={this.props.profileStore.currentUser}
-                onSubmitForm={user => this.props.profileStore.updateUser(user)} />
+                currentUser={this.props.currentUser}
+                onSubmitForm={this.props.onSubmitForm} />
 
               <hr />
 
               <button
                 className="btn btn-outline-danger"
-                onClick={this.handleClickLogout}>
+                onClick={this.props.onClickLogout}>
                 Or click here to logout.
               </button>
 
@@ -146,4 +165,4 @@ class Settings extends React.Component {
   }
 }
 
-export default Settings;
+export default connect(mapStateToProps, mapDispatchToProps)(Settings);

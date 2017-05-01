@@ -1,11 +1,27 @@
 import { Link } from 'react-router';
 import ListErrors from './ListErrors';
 import React from 'react';
-import { inject, observer } from 'mobx-react';
+import agent from '../agent';
+import { connect } from 'react-redux';
 
-@inject('authStore')
-@observer
-export default class Register extends React.Component {
+const mapStateToProps = state => ({ ...state.auth });
+
+const mapDispatchToProps = dispatch => ({
+  onChangeEmail: value =>
+    dispatch({ type: 'UPDATE_FIELD_AUTH', key: 'email', value }),
+  onChangePassword: value =>
+    dispatch({ type: 'UPDATE_FIELD_AUTH', key: 'password', value }),
+  onChangeUsername: value =>
+    dispatch({ type: 'UPDATE_FIELD_AUTH', key: 'username', value }),
+  onSubmit: (username, email, password) => {
+    const payload = agent.Auth.register(username, email, password);
+    dispatch({ type: 'REGISTER', payload })
+  },
+  onUnload: () =>
+    dispatch({ type: 'REGISTER_PAGE_UNLOADED' })
+});
+
+class Register extends React.Component {
   constructor() {
     super();
     this.changeEmail = ev => this.props.onChangeEmail(ev.target.value);
@@ -18,19 +34,13 @@ export default class Register extends React.Component {
   }
 
   componentWillUnmount() {
-    this.props.authStore.reset();
+    this.props.onUnload();
   }
 
-  handleUsernameChange = e => this.props.authStore.setUsername(e.target.value);
-  handleEmailChange = e => this.props.authStore.setEmail(e.target.value);
-  handlePasswordChange = e => this.props.authStore.setPassword(e.target.value);
-  handleSubmitForm = (e) => {
-    e.preventDefault();
-    this.props.authStore.register()
-  };
-
   render() {
-    const { values, errors, inProgress } = this.props.authStore;
+    const email = this.props.email;
+    const password = this.props.password;
+    const username = this.props.username;
 
     return (
       <div className="auth-page">
@@ -45,9 +55,9 @@ export default class Register extends React.Component {
                 </Link>
               </p>
 
-              <ListErrors errors={errors} />
+              <ListErrors errors={this.props.errors} />
 
-              <form onSubmit={this.handleSubmitForm}>
+              <form onSubmit={this.submitForm(username, email, password)}>
                 <fieldset>
 
                   <fieldset className="form-group">
@@ -55,8 +65,8 @@ export default class Register extends React.Component {
                       className="form-control form-control-lg"
                       type="text"
                       placeholder="Username"
-                      value={values.username}
-                      onChange={this.handleUsernameChange} />
+                      value={this.props.username}
+                      onChange={this.changeUsername} />
                   </fieldset>
 
                   <fieldset className="form-group">
@@ -64,8 +74,8 @@ export default class Register extends React.Component {
                       className="form-control form-control-lg"
                       type="email"
                       placeholder="Email"
-                      value={values.email}
-                      onChange={this.handleEmailChange} />
+                      value={this.props.email}
+                      onChange={this.changeEmail} />
                   </fieldset>
 
                   <fieldset className="form-group">
@@ -73,14 +83,14 @@ export default class Register extends React.Component {
                       className="form-control form-control-lg"
                       type="password"
                       placeholder="Password"
-                      value={values.password}
-                      onChange={this.handlePasswordChange} />
+                      value={this.props.password}
+                      onChange={this.changePassword} />
                   </fieldset>
 
                   <button
                     className="btn btn-lg btn-primary pull-xs-right"
                     type="submit"
-                    disabled={inProgress}>
+                    disabled={this.props.inProgress}>
                     Sign in
                   </button>
 
@@ -94,3 +104,5 @@ export default class Register extends React.Component {
     );
   }
 }
+
+export default connect(mapStateToProps, mapDispatchToProps)(Register);

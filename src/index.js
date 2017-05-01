@@ -2,7 +2,6 @@
 
 import ReactDOM from 'react-dom';
 import { Provider } from 'react-redux';
-import promiseFinally from 'promise.prototype.finally';
 import React from 'react';
 import { Router, Route, IndexRoute, hashHistory } from 'react-router';
 import agent from './agent';
@@ -19,8 +18,6 @@ import Profile from './components/Profile';
 import ProfileFavorites from './components/ProfileFavorites';
 import Register from './components/Register';
 import Settings from './components/Settings';
-
-promiseFinally.shim();
 
 ReactDOM.render((
   <Provider store={store}>
